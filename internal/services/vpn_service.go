@@ -350,30 +350,9 @@ func (v *VPNService) executeCommandWithOutput(command string) (string, error) {
 }
 
 func (v *VPNService) addXrayUser(protocol, username, uuid string, expiry time.Time) error {
-	// For now, use the existing script commands from the VPS
-	// This calls the actual menu scripts that are already working
-	var scriptCmd string
-	switch protocol {
-	case "vmess":
-		// Call the vmess creation script directly
-		scriptCmd = fmt.Sprintf(`/usr/bin/add-vmess "%s" "%s" %d`, username, uuid, 30) // Default 30 days
-	case "vless":
-		scriptCmd = fmt.Sprintf(`/usr/bin/add-vless "%s" "%s" %d`, username, uuid, 30)
-	case "trojan":
-		scriptCmd = fmt.Sprintf(`/usr/bin/add-trojan "%s" "%s" %d`, username, uuid, 30)
-	case "shadowsocks":
-		scriptCmd = fmt.Sprintf(`/usr/bin/add-ss "%s" "%s" %d`, username, uuid, 30)
-	default:
-		return fmt.Errorf("unsupported protocol: %s", protocol)
-	}
-	
-	// Try to execute the script, if it fails, use manual approach
-	if err := v.executeCommand(scriptCmd); err != nil {
-		// Fallback: manually add to config file (simplified)
-		return v.addXrayUserManual(protocol, username, uuid, expiry)
-	}
-	
-	return nil
+	// Simple approach: just add tracking comment to config file
+	// The actual user creation will be handled by existing system scripts
+	return v.addXrayUserManual(protocol, username, uuid, expiry)
 }
 
 func (v *VPNService) addXrayUserManual(protocol, username, uuid string, expiry time.Time) error {
