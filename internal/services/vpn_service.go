@@ -350,9 +350,33 @@ func (v *VPNService) executeCommandWithOutput(command string) (string, error) {
 }
 
 func (v *VPNService) addXrayUser(protocol, username, uuid string, expiry time.Time) error {
-	// Simple approach: just add tracking comment to config file
-	// The actual user creation will be handled by existing system scripts
-	return v.addXrayUserManual(protocol, username, uuid, expiry)
+	// Use the existing scripts but make them non-interactive
+	days := int(time.Until(expiry).Hours() / 24)
+	if days <= 0 {
+		days = 1
+	}
+	
+	var scriptCmd string
+	switch protocol {
+	case "vmess":
+		// Use add-ws script with echo input
+		scriptCmd = fmt.Sprintf(`echo -e "%s\n%d" | /usr/bin/add-ws`, username, days)
+	case "vless":
+		scriptCmd = fmt.Sprintf(`echo -e "%s\n%d" | /usr/bin/add-vless`, username, days)
+	case "trojan":
+		scriptCmd = fmt.Sprintf(`echo -e "%s\n%d" | /usr/bin/add-tr`, username, days)
+	case "shadowsocks":
+		scriptCmd = fmt.Sprintf(`echo -e "%s\n%d" | /usr/bin/add-ssws`, username, days)
+	default:
+		return fmt.Errorf("unsupported protocol: %s", protocol)
+	}
+	
+	// Execute the script with piped input
+	if err := v.executeCommand(scriptCmd); err != nil {
+		return fmt.Errorf("failed to create %s user: %v", protocol, err)
+	}
+	
+	return nil
 }
 
 func (v *VPNService) addXrayUserManual(protocol, username, uuid string, expiry time.Time) error {
