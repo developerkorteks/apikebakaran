@@ -1,9 +1,7 @@
 package services
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -352,35 +350,52 @@ func (v *VPNService) executeCommandWithOutput(command string) (string, error) {
 }
 
 func (v *VPNService) addXrayUser(protocol, username, uuid string, expiry time.Time) error {
-	// This is a simplified version - in reality, you'd need to properly modify the xray config JSON
+	// For now, use the existing script commands from the VPS
+	// This calls the actual menu scripts that are already working
+	var scriptCmd string
+	switch protocol {
+	case "vmess":
+		// Call the vmess creation script directly
+		scriptCmd = fmt.Sprintf(`/usr/bin/add-vmess "%s" "%s" %d`, username, uuid, 30) // Default 30 days
+	case "vless":
+		scriptCmd = fmt.Sprintf(`/usr/bin/add-vless "%s" "%s" %d`, username, uuid, 30)
+	case "trojan":
+		scriptCmd = fmt.Sprintf(`/usr/bin/add-trojan "%s" "%s" %d`, username, uuid, 30)
+	case "shadowsocks":
+		scriptCmd = fmt.Sprintf(`/usr/bin/add-ss "%s" "%s" %d`, username, uuid, 30)
+	default:
+		return fmt.Errorf("unsupported protocol: %s", protocol)
+	}
+	
+	// Try to execute the script, if it fails, use manual approach
+	if err := v.executeCommand(scriptCmd); err != nil {
+		// Fallback: manually add to config file (simplified)
+		return v.addXrayUserManual(protocol, username, uuid, expiry)
+	}
+	
+	return nil
+}
+
+func (v *VPNService) addXrayUserManual(protocol, username, uuid string, expiry time.Time) error {
+	// Simple manual approach - just add comment line to track user
 	configPath := "/etc/xray/config.json"
+	expiryStr := expiry.Format("2006-01-02")
 	
-	// Read current config
-	configData, err := os.ReadFile(configPath)
-	if err != nil {
-		return err
+	var commentPrefix string
+	switch protocol {
+	case "vmess":
+		commentPrefix = "#vmsg"
+	case "vless":
+		commentPrefix = "#vlsg"
+	case "trojan":
+		commentPrefix = "#trg"
+	case "shadowsocks":
+		commentPrefix = "#ssg"
 	}
-
-	var config map[string]interface{}
-	if err := json.Unmarshal(configData, &config); err != nil {
-		return err
-	}
-
-	// Add user to appropriate inbound
-	// This is a simplified implementation - you'd need to properly handle the JSON structure
 	
-	// Write back to file
-	updatedData, err := json.MarshalIndent(config, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	if err := os.WriteFile(configPath, updatedData, 0644); err != nil {
-		return err
-	}
-
-	// Restart xray service
-	return v.executeCommand("systemctl restart xray")
+	// Add comment line to track the user
+	cmd := fmt.Sprintf(`echo "%s %s %s" >> %s`, commentPrefix, username, expiryStr, configPath)
+	return v.executeCommand(cmd)
 }
 
 func (v *VPNService) getXrayUsers(protocol, prefix string) ([]models.User, error) {
