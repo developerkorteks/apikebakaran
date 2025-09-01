@@ -137,6 +137,21 @@ func (v *VPNService) CreateVmessUser(req *models.CreateUserRequest) (*models.VPN
 	domainOutput, _ := domainCmd.Output()
 	domain := strings.TrimSpace(string(domainOutput))
 
+	// Get vmess port from log-install.txt like original script
+	portCmd := exec.Command("bash", "-c", "cat ~/log-install.txt | grep -w 'Vmess TLS' | cut -d: -f2 | sed 's/ //g' 2>/dev/null || echo '443'")
+	portOutput, _ := portCmd.Output()
+	port := strings.TrimSpace(string(portOutput))
+	if port == "" {
+		port = "443"
+	}
+
+	// Generate links exactly like original script
+	vmessWS := fmt.Sprintf("vmess://%s@%s:%s?type=ws&encryption=none&security=tls&host=%s&path=/vmess&allowInsecure=1&sni=%s#VMESS_WS_%s", 
+		userUUID, domain, port, domain, domain, req.Username)
+	vmessGRPC := fmt.Sprintf("vmess://%s@%s:%s?mode=gun&security=tls&encryption=none&type=grpc&serviceName=vmess-grpc&sni=%s#VMESS_GRPC_%s", 
+		userUUID, domain, port, domain, req.Username)
+	configURL := fmt.Sprintf("http://%s:81/vmess-%s.txt", domain, req.Username)
+
 	config := &models.VPNConfig{
 		Protocol: "vmess",
 		Server:   domain,
@@ -144,14 +159,19 @@ func (v *VPNService) CreateVmessUser(req *models.CreateUserRequest) (*models.VPN
 		Username: req.Username,
 		UUID:     userUUID,
 		Config: map[string]string{
-			"port":     "443",
-			"uuid":     userUUID,
-			"alterId":  "0",
-			"security": "auto",
-			"network":  "ws",
-			"path":     "/vmess",
-			"host":     domain,
-			"tls":      "tls",
+			"remarks":     req.Username,
+			"host":        domain,
+			"port":        port,
+			"uuid":        userUUID,
+			"alterId":     "0",
+			"security":    "auto",
+			"network":     "ws/grpc",
+			"path":        "/vmess",
+			"serviceName": "vmess-grpc",
+			"link_ws":     vmessWS,
+			"link_grpc":   vmessGRPC,
+			"config_url":  configURL,
+			"expired_on":  expiryDate.Format("2006-01-02"),
 		},
 	}
 
@@ -179,6 +199,30 @@ func (v *VPNService) CreateVlessUser(req *models.CreateUserRequest) (*models.VPN
 	domainOutput, _ := domainCmd.Output()
 	domain := strings.TrimSpace(string(domainOutput))
 
+	// Get vless ports from log-install.txt like original script
+	tlsPortCmd := exec.Command("bash", "-c", "cat ~/log-install.txt | grep -w 'Vless TLS' | cut -d: -f2 | sed 's/ //g' 2>/dev/null || echo '443'")
+	tlsPortOutput, _ := tlsPortCmd.Output()
+	tlsPort := strings.TrimSpace(string(tlsPortOutput))
+	if tlsPort == "" {
+		tlsPort = "443"
+	}
+
+	nonePortCmd := exec.Command("bash", "-c", "cat ~/log-install.txt | grep -w 'Vless None TLS' | cut -d: -f2 | sed 's/ //g' 2>/dev/null || echo '80'")
+	nonePortOutput, _ := nonePortCmd.Output()
+	nonePort := strings.TrimSpace(string(nonePortOutput))
+	if nonePort == "" {
+		nonePort = "80"
+	}
+
+	// Generate links exactly like original script
+	vlessTLS := fmt.Sprintf("vless://%s@%s:%s?type=ws&encryption=none&security=tls&host=%s&path=/vless&allowInsecure=1&sni=%s#XRAY_VLESS_TLS_%s", 
+		userUUID, domain, tlsPort, domain, domain, req.Username)
+	vlessNTLS := fmt.Sprintf("vless://%s@%s:%s?type=ws&encryption=none&security=none&host=%s&path=/vless#XRAY_VLESS_NTLS_%s", 
+		userUUID, domain, nonePort, domain, req.Username)
+	vlessGRPC := fmt.Sprintf("vless://%s@%s:%s?mode=gun&security=tls&encryption=none&type=grpc&serviceName=vless-grpc&sni=%s#VLESS_GRPC_%s", 
+		userUUID, domain, tlsPort, domain, req.Username)
+	configURL := fmt.Sprintf("http://%s:81/vless-%s.txt", domain, req.Username)
+
 	config := &models.VPNConfig{
 		Protocol: "vless",
 		Server:   domain,
@@ -186,13 +230,20 @@ func (v *VPNService) CreateVlessUser(req *models.CreateUserRequest) (*models.VPN
 		Username: req.Username,
 		UUID:     userUUID,
 		Config: map[string]string{
-			"port":       "443",
-			"uuid":       userUUID,
-			"encryption": "none",
-			"network":    "ws",
-			"path":       "/vless",
-			"host":       domain,
-			"tls":        "tls",
+			"remarks":     req.Username,
+			"host":        domain,
+			"port_tls":    tlsPort,
+			"port_ntls":   nonePort,
+			"uuid":        userUUID,
+			"encryption":  "none",
+			"network":     "ws/grpc",
+			"path":        "/vless",
+			"serviceName": "vless-grpc",
+			"link_tls":    vlessTLS,
+			"link_ntls":   vlessNTLS,
+			"link_grpc":   vlessGRPC,
+			"config_url":  configURL,
+			"expired_on":  expiryDate.Format("2006-01-02"),
 		},
 	}
 
@@ -216,23 +267,47 @@ func (v *VPNService) CreateTrojanUser(req *models.CreateUserRequest) (*models.VP
 		return nil, err
 	}
 
+	// Get domain and port info like original script
 	domainCmd := exec.Command("bash", "-c", "cat /etc/xray/domain 2>/dev/null || curl -s ipinfo.io/ip")
 	domainOutput, _ := domainCmd.Output()
 	domain := strings.TrimSpace(string(domainOutput))
+	
+	// Get trojan port from log-install.txt like original script
+	portCmd := exec.Command("bash", "-c", "cat ~/log-install.txt | grep -w 'Trojan WS ' | cut -d: -f2 | sed 's/ //g' 2>/dev/null || echo '443'")
+	portOutput, _ := portCmd.Output()
+	port := strings.TrimSpace(string(portOutput))
+	if port == "" {
+		port = "443"
+	}
+
+	// Generate links exactly like original script
+	trojanWS := fmt.Sprintf("trojan://%s@%s:%s?path=%%2Ftrojan-ws&security=tls&host=%s&type=ws&sni=%s#TROJAN_WS_%s", 
+		userUUID, domain, port, domain, domain, req.Username)
+	trojanGO := fmt.Sprintf("trojan-go://%s@%s:%s?path=%%2Ftrojan-ws&security=tls&host=%s&type=ws&sni=%s#TROJANGO_%s", 
+		userUUID, domain, port, domain, domain, req.Username)
+	trojanGRPC := fmt.Sprintf("trojan://%s@%s:%s?mode=gun&security=tls&type=grpc&serviceName=trojan-grpc&sni=%s#TROJAN_GRPC_%s", 
+		userUUID, domain, port, domain, req.Username)
+	configURL := fmt.Sprintf("http://%s:81/trojan-%s.txt", domain, req.Username)
 
 	config := &models.VPNConfig{
 		Protocol: "trojan",
 		Server:   domain,
 		Port:     443,
 		Username: req.Username,
-		Password: userUUID, // Trojan uses password instead of UUID
+		Password: userUUID,
 		Config: map[string]string{
-			"port":     "443",
-			"password": userUUID,
-			"network":  "ws",
-			"path":     "/trojan",
-			"host":     domain,
-			"tls":      "tls",
+			"remarks":     req.Username,
+			"host":        domain,
+			"port":        port,
+			"key":         userUUID,
+			"network":     "ws/grpc",
+			"path":        "/trojan-ws",
+			"serviceName": "trojan-grpc",
+			"link_ws":     trojanWS,
+			"link_go":     trojanGO,
+			"link_grpc":   trojanGRPC,
+			"config_url":  configURL,
+			"expired_on":  expiryDate.Format("2006-01-02"),
 		},
 	}
 
@@ -260,6 +335,21 @@ func (v *VPNService) CreateShadowsocksUser(req *models.CreateUserRequest) (*mode
 	domainOutput, _ := domainCmd.Output()
 	domain := strings.TrimSpace(string(domainOutput))
 
+	// Get shadowsocks port from log-install.txt like original script
+	portCmd := exec.Command("bash", "-c", "cat ~/log-install.txt | grep -w 'Shadowsocks WS' | cut -d: -f2 | sed 's/ //g' 2>/dev/null || echo '443'")
+	portOutput, _ := portCmd.Output()
+	port := strings.TrimSpace(string(portOutput))
+	if port == "" {
+		port = "443"
+	}
+
+	// Generate links exactly like original script
+	ssWS := fmt.Sprintf("ss://%s@%s:%s?type=ws&security=tls&host=%s&path=/ss&sni=%s#SS_WS_%s", 
+		userUUID, domain, port, domain, domain, req.Username)
+	ssGRPC := fmt.Sprintf("ss://%s@%s:%s?mode=gun&security=tls&type=grpc&serviceName=ss-grpc&sni=%s#SS_GRPC_%s", 
+		userUUID, domain, port, domain, req.Username)
+	configURL := fmt.Sprintf("http://%s:81/ss-%s.txt", domain, req.Username)
+
 	config := &models.VPNConfig{
 		Protocol: "shadowsocks",
 		Server:   domain,
@@ -267,12 +357,18 @@ func (v *VPNService) CreateShadowsocksUser(req *models.CreateUserRequest) (*mode
 		Username: req.Username,
 		Password: userUUID,
 		Config: map[string]string{
-			"port":     "443",
-			"password": userUUID,
-			"method":   "aes-256-gcm",
-			"network":  "ws",
-			"path":     "/ss",
-			"host":     domain,
+			"remarks":     req.Username,
+			"host":        domain,
+			"port":        port,
+			"password":    userUUID,
+			"method":      "aes-256-gcm",
+			"network":     "ws/grpc",
+			"path":        "/ss",
+			"serviceName": "ss-grpc",
+			"link_ws":     ssWS,
+			"link_grpc":   ssGRPC,
+			"config_url":  configURL,
+			"expired_on":  expiryDate.Format("2006-01-02"),
 		},
 	}
 
