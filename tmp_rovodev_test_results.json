@@ -1,0 +1,154 @@
+[
+  {
+    "endpoint": "/health",
+    "method": "GET",
+    "status": "PASS",
+    "message": "Health check successful",
+    "details": "Status: ok",
+    "timestamp": "2025-09-01T16:18:30.004869"
+  },
+  {
+    "endpoint": "/auth/login",
+    "method": "POST",
+    "status": "PASS",
+    "message": "Login successful",
+    "details": null,
+    "timestamp": "2025-09-01T16:18:30.633020"
+  },
+  {
+    "endpoint": "/user/profile",
+    "method": "GET",
+    "status": "PASS",
+    "message": "Request successful",
+    "details": null,
+    "timestamp": "2025-09-01T16:18:31.042975"
+  },
+  {
+    "endpoint": "/user/list",
+    "method": "GET",
+    "status": "PASS",
+    "message": "Request successful",
+    "details": null,
+    "timestamp": "2025-09-01T16:18:31.452522"
+  },
+  {
+    "endpoint": "/system/info",
+    "method": "GET",
+    "status": "PASS",
+    "message": "Request successful",
+    "details": null,
+    "timestamp": "2025-09-01T16:18:32.168873"
+  },
+  {
+    "endpoint": "/system/status",
+    "method": "GET",
+    "status": "PASS",
+    "message": "Request successful",
+    "details": null,
+    "timestamp": "2025-09-01T16:18:32.885805"
+  },
+  {
+    "endpoint": "/system/bandwidth",
+    "method": "GET",
+    "status": "PASS",
+    "message": "Request successful",
+    "details": null,
+    "timestamp": "2025-09-01T16:18:33.568771"
+  },
+  {
+    "endpoint": "/domain/current",
+    "method": "GET",
+    "status": "PASS",
+    "message": "Request successful",
+    "details": null,
+    "timestamp": "2025-09-01T16:18:34.319710"
+  },
+  {
+    "endpoint": "/vpn/ssh/users",
+    "method": "GET",
+    "status": "PASS",
+    "message": "Found 1 ssh users",
+    "details": null,
+    "timestamp": "2025-09-01T16:18:34.626942"
+  },
+  {
+    "endpoint": "/vpn/vmess/users",
+    "method": "GET",
+    "status": "PASS",
+    "message": "Found 0 vmess users",
+    "details": null,
+    "timestamp": "2025-09-01T16:18:35.074191"
+  },
+  {
+    "endpoint": "/vpn/vless/users",
+    "method": "GET",
+    "status": "PASS",
+    "message": "Found 0 vless users",
+    "details": null,
+    "timestamp": "2025-09-01T16:18:35.445804"
+  },
+  {
+    "endpoint": "/vpn/trojan/users",
+    "method": "GET",
+    "status": "PASS",
+    "message": "Found 6 trojan users",
+    "details": null,
+    "timestamp": "2025-09-01T16:18:35.855976"
+  },
+  {
+    "endpoint": "/vpn/shadowsocks/users",
+    "method": "GET",
+    "status": "PASS",
+    "message": "Found 0 shadowsocks users",
+    "details": null,
+    "timestamp": "2025-09-01T16:18:36.265365"
+  },
+  {
+    "endpoint": "/vpn/users/all",
+    "method": "GET",
+    "status": "PASS",
+    "message": "Found 5 total users",
+    "details": null,
+    "timestamp": "2025-09-01T16:18:36.674812"
+  },
+  {
+    "endpoint": "/vpn/ssh/create",
+    "method": "POST",
+    "status": "FAIL",
+    "message": "HTTP 400",
+    "details": "{\"success\":false,\"message\":\"\",\"error\":\"Invalid request: Key: 'CreateUserRequest.Protocol' Error:Field validation for 'Protocol' failed on the 'required' tag\"}",
+    "timestamp": "2025-09-01T16:18:37.186717"
+  },
+  {
+    "endpoint": "/vpn/vmess/create",
+    "method": "POST",
+    "status": "FAIL",
+    "message": "HTTP 400",
+    "details": "{\"success\":false,\"message\":\"\",\"error\":\"Invalid request: Key: 'CreateUserRequest.Protocol' Error:Field validation for 'Protocol' failed on the 'required' tag\"}",
+    "timestamp": "2025-09-01T16:18:37.541863"
+  },
+  {
+    "endpoint": "/vpn/vless/create",
+    "method": "POST",
+    "status": "FAIL",
+    "message": "HTTP 400",
+    "details": "{\"success\":false,\"message\":\"\",\"error\":\"Invalid request: Key: 'CreateUserRequest.Protocol' Error:Field validation for 'Protocol' failed on the 'required' tag\"}",
+    "timestamp": "2025-09-01T16:18:37.849431"
+  },
+  {
+    "endpoint": "/vpn/trojan/create",
+    "method": "POST",
+    "status": "FAIL",
+    "message": "HTTP 400",
+    "details": "{\"success\":false,\"message\":\"\",\"error\":\"Invalid request: Key: 'CreateUserRequest.Protocol' Error:Field validation for 'Protocol' failed on the 'required' tag\"}",
+    "timestamp": "2025-09-01T16:18:38.161277"
+  },
+  {
+    "endpoint": "/vpn/shadowsocks/create",
+    "method": "POST",
+    "status": "FAIL",
+    "message": "HTTP 400",
+    "details": "{\"success\":false,\"message\":\"\",\"error\":\"Invalid request: Key: 'CreateUserRequest.Protocol' Error:Field validation for 'Protocol' failed on the 'required' tag\"}",
+    "timestamp": "2025-09-01T16:18:38.460757"
+  }
+]

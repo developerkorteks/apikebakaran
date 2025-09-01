@@ -23,7 +23,7 @@ type CreateUserRequest struct {
 	Password string `json:"password,omitempty"`
 	Email    string `json:"email,omitempty"`
 	Days     int    `json:"days" binding:"required,min=1"`
-	Protocol string `json:"protocol" binding:"required"`
+	Protocol string `json:"protocol,omitempty"` // Set by handler, not required in request
 }
 
 // SystemInfo represents system information
