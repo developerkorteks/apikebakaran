@@ -378,17 +378,17 @@ func (v *VPNService) addXrayUserManual(protocol, username, uuid string, expiry t
 }
 
 func (v *VPNService) getXrayUsers(protocol, prefix string) ([]models.User, error) {
-	// Use the exact same pattern as menu_script.txt
+	// Use the exact same pattern as menu_script.txt but avoid JSON parsing errors
 	var grepPattern string
 	switch protocol {
 	case "vmess":
-		grepPattern = "grep -c -E \"^#vmsg \" /etc/xray/config.json"
+		grepPattern = "grep -c -E \"^#vmsg \" /etc/xray/config.json 2>/dev/null || echo 0"
 	case "vless":
-		grepPattern = "grep -c -E \"^#vlsg \" /etc/xray/config.json"
+		grepPattern = "grep -c -E \"^#vlsg \" /etc/xray/config.json 2>/dev/null || echo 0"
 	case "trojan":
-		grepPattern = "grep -c -E \"^#trg \" /etc/xray/config.json"
+		grepPattern = "grep -c -E \"^#trg \" /etc/xray/config.json 2>/dev/null || echo 0"
 	case "shadowsocks":
-		grepPattern = "grep -c -E \"^#ssg \" /etc/xray/config.json"
+		grepPattern = "grep -c -E \"^#ssg \" /etc/xray/config.json 2>/dev/null || echo 0"
 	default:
 		return []models.User{}, nil
 	}
@@ -403,12 +403,12 @@ func (v *VPNService) getXrayUsers(protocol, prefix string) ([]models.User, error
 	// Get actual usernames from config file
 	var users []models.User
 	if count > 0 {
-		// Extract usernames from xray config
-		usernamesOutput, err := v.executeCommandWithOutput(fmt.Sprintf("grep -E \"^%s \" /etc/xray/config.json | awk '{print $2}'", prefix))
-		if err == nil {
+		// Extract usernames from xray config, avoid JSON parsing
+		usernamesOutput, err := v.executeCommandWithOutput(fmt.Sprintf("grep -E \"^%s \" /etc/xray/config.json 2>/dev/null | awk '{print $2}' || true", prefix))
+		if err == nil && usernamesOutput != "" {
 			usernames := strings.Split(strings.TrimSpace(usernamesOutput), "\n")
 			for _, username := range usernames {
-				if username != "" {
+				if username != "" && strings.TrimSpace(username) != "" {
 					users = append(users, models.User{
 						Username: strings.TrimSpace(username),
 						Protocol: protocol,

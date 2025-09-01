@@ -5,7 +5,7 @@
     "status": "PASS",
     "message": "Health check successful",
     "details": "Status: ok",
-    "timestamp": "2025-09-01T16:26:25.044090"
+    "timestamp": "2025-09-01T16:35:56.568571"
   },
   {
     "endpoint": "/auth/login",
@@ -13,7 +13,7 @@
     "status": "PASS",
     "message": "Login successful",
     "details": null,
-    "timestamp": "2025-09-01T16:26:25.632541"
+    "timestamp": "2025-09-01T16:35:57.113749"
   },
   {
     "endpoint": "/user/profile",
@@ -21,7 +21,7 @@
     "status": "PASS",
     "message": "Request successful",
     "details": null,
-    "timestamp": "2025-09-01T16:26:25.956174"
+    "timestamp": "2025-09-01T16:35:57.193514"
   },
   {
     "endpoint": "/user/list",
@@ -29,7 +29,7 @@
     "status": "PASS",
     "message": "Request successful",
     "details": null,
-    "timestamp": "2025-09-01T16:26:26.265889"
+    "timestamp": "2025-09-01T16:35:57.275812"
   },
   {
     "endpoint": "/system/info",
@@ -37,7 +37,7 @@
     "status": "PASS",
     "message": "Request successful",
     "details": null,
-    "timestamp": "2025-09-01T16:26:27.090897"
+    "timestamp": "2025-09-01T16:35:57.732536"
   },
   {
     "endpoint": "/system/status",
@@ -45,7 +45,7 @@
     "status": "PASS",
     "message": "Request successful",
     "details": null,
-    "timestamp": "2025-09-01T16:26:27.650786"
+    "timestamp": "2025-09-01T16:35:58.036086"
   },
   {
     "endpoint": "/system/bandwidth",
@@ -53,7 +53,7 @@
     "status": "PASS",
     "message": "Request successful",
     "details": null,
-    "timestamp": "2025-09-01T16:26:28.297153"
+    "timestamp": "2025-09-01T16:35:58.413678"
   },
   {
     "endpoint": "/domain/current",
@@ -61,15 +61,15 @@
     "status": "PASS",
     "message": "Request successful",
     "details": null,
-    "timestamp": "2025-09-01T16:26:28.951958"
+    "timestamp": "2025-09-01T16:35:58.803752"
   },
   {
     "endpoint": "/vpn/ssh/users",
     "method": "GET",
     "status": "PASS",
-    "message": "Found 1 ssh users",
+    "message": "Found 2 ssh users",
     "details": null,
-    "timestamp": "2025-09-01T16:26:29.254990"
+    "timestamp": "2025-09-01T16:35:58.914307"
   },
   {
     "endpoint": "/vpn/vmess/users",
@@ -77,7 +77,7 @@
     "status": "PASS",
     "message": "Found 0 vmess users",
     "details": null,
-    "timestamp": "2025-09-01T16:26:29.579510"
+    "timestamp": "2025-09-01T16:35:59.007086"
   },
   {
     "endpoint": "/vpn/vless/users",
@@ -85,7 +85,7 @@
     "status": "PASS",
     "message": "Found 0 vless users",
     "details": null,
-    "timestamp": "2025-09-01T16:26:29.958096"
+    "timestamp": "2025-09-01T16:35:59.101611"
   },
   {
     "endpoint": "/vpn/trojan/users",
@@ -93,7 +93,7 @@
     "status": "PASS",
     "message": "Found 6 trojan users",
     "details": null,
-    "timestamp": "2025-09-01T16:26:30.367503"
+    "timestamp": "2025-09-01T16:35:59.210214"
   },
   {
     "endpoint": "/vpn/shadowsocks/users",
@@ -101,7 +101,7 @@
     "status": "PASS",
     "message": "Found 0 shadowsocks users",
     "details": null,
-    "timestamp": "2025-09-01T16:26:30.777516"
+    "timestamp": "2025-09-01T16:35:59.314828"
   },
   {
     "endpoint": "/vpn/users/all",
@@ -109,7 +109,7 @@
     "status": "PASS",
     "message": "Found 5 total users",
     "details": null,
-    "timestamp": "2025-09-01T16:26:31.186971"
+    "timestamp": "2025-09-01T16:35:59.473682"
   },
   {
     "endpoint": "/vpn/ssh/create",
@@ -117,7 +117,7 @@
     "status": "PASS",
     "message": "Created ssh user successfully",
     "details": null,
-    "timestamp": "2025-09-01T16:26:31.580025"
+    "timestamp": "2025-09-01T16:35:59.602030"
   },
   {
     "endpoint": "/vpn/vmess/create",
@@ -125,7 +125,7 @@
     "status": "FAIL",
     "message": "HTTP 500",
     "details": "{\"success\":false,\"message\":\"\",\"error\":\"Failed to create VMESS user: invalid character '#' after object key:value pair\"}",
-    "timestamp": "2025-09-01T16:26:31.903240"
+    "timestamp": "2025-09-01T16:35:59.693754"
   },
   {
     "endpoint": "/vpn/vless/create",
@@ -133,7 +133,7 @@
     "status": "FAIL",
     "message": "HTTP 500",
     "details": "{\"success\":false,\"message\":\"\",\"error\":\"Failed to create VLESS user: invalid character '#' after object key:value pair\"}",
-    "timestamp": "2025-09-01T16:26:32.210601"
+    "timestamp": "2025-09-01T16:35:59.800168"
   },
   {
     "endpoint": "/vpn/trojan/create",
@@ -141,7 +141,7 @@
     "status": "FAIL",
     "message": "HTTP 500",
     "details": "{\"success\":false,\"message\":\"\",\"error\":\"Failed to create Trojan user: invalid character '#' after object key:value pair\"}",
-    "timestamp": "2025-09-01T16:26:32.533407"
+    "timestamp": "2025-09-01T16:35:59.897491"
   },
   {
     "endpoint": "/vpn/shadowsocks/create",
@@ -149,6 +149,6 @@
     "status": "FAIL",
     "message": "HTTP 500",
     "details": "{\"success\":false,\"message\":\"\",\"error\":\"Failed to create Shadowsocks user: invalid character '#' after object key:value pair\"}",
-    "timestamp": "2025-09-01T16:26:32.825248"
+    "timestamp": "2025-09-01T16:35:59.983850"
   }
 ]
