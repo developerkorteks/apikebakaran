@@ -5,23 +5,6 @@
 
 set -e
 
-echo "🚀 Starting VPN API Auto Setup..."
-echo "=================================="
-
-# Step 0: Run dependency check
-print_header "🔍 Step 0: Checking dependencies..."
-if [ -f "./check_dependencies.sh" ]; then
-    chmod +x ./check_dependencies.sh
-    ./check_dependencies.sh
-    if [ $? -ne 0 ]; then
-        print_error "Dependency check failed!"
-        exit 1
-    fi
-    print_status "All dependencies satisfied"
-else
-    print_warning "Dependency checker not found, continuing..."
-fi
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -45,6 +28,23 @@ print_error() {
 print_header() {
     echo -e "${BLUE}$1${NC}"
 }
+
+echo "🚀 Starting VPN API Auto Setup..."
+echo "=================================="
+
+# Step 0: Run dependency check
+print_header "🔍 Step 0: Checking dependencies..."
+if [ -f "./check_dependencies.sh" ]; then
+    chmod +x ./check_dependencies.sh
+    ./check_dependencies.sh
+    if [ $? -ne 0 ]; then
+        print_error "Dependency check failed!"
+        exit 1
+    fi
+    print_status "All dependencies satisfied"
+else
+    print_warning "Dependency checker not found, continuing..."
+fi
 
 # Check if running as root
 if [ "$EUID" -ne 0 ]; then
