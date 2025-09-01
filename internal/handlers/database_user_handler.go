@@ -20,6 +20,16 @@ func NewDatabaseUserHandler(userService *services.DatabaseUserService) *Database
 }
 
 // Login authenticates admin user
+// @Summary Admin login
+// @Description Authenticate admin user and get JWT token
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body models.LoginRequest true "Login credentials"
+// @Success 200 {object} models.APIResponse{data=models.LoginResponse} "Login successful"
+// @Failure 400 {object} models.APIResponse "Invalid request"
+// @Failure 401 {object} models.APIResponse "Authentication failed"
+// @Router /auth/login [post]
 func (h *DatabaseUserHandler) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -47,6 +57,15 @@ func (h *DatabaseUserHandler) Login(c *gin.Context) {
 }
 
 // Register creates a new admin user
+// @Summary Register new admin user
+// @Description Create a new admin user account
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body models.LoginRequest true "Registration credentials"
+// @Success 201 {object} models.APIResponse "User registered successfully"
+// @Failure 400 {object} models.APIResponse "Invalid request or user already exists"
+// @Router /auth/register [post]
 func (h *DatabaseUserHandler) Register(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -72,6 +91,16 @@ func (h *DatabaseUserHandler) Register(c *gin.Context) {
 }
 
 // GetProfile returns user profile information
+// @Summary Get user profile
+// @Description Get authenticated user's profile information
+// @Tags User Management
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} models.APIResponse "Profile retrieved successfully"
+// @Failure 401 {object} models.APIResponse "User not authenticated"
+// @Failure 404 {object} models.APIResponse "User not found"
+// @Router /user/profile [get]
 func (h *DatabaseUserHandler) GetProfile(c *gin.Context) {
 	username, exists := c.Get("username")
 	if !exists {
@@ -99,6 +128,17 @@ func (h *DatabaseUserHandler) GetProfile(c *gin.Context) {
 }
 
 // ChangePassword changes user password
+// @Summary Change user password
+// @Description Change authenticated user's password
+// @Tags User Management
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body models.ChangePasswordRequest true "Old and new passwords"
+// @Success 200 {object} models.APIResponse "Password changed successfully"
+// @Failure 400 {object} models.APIResponse "Invalid request"
+// @Failure 401 {object} models.APIResponse "User not authenticated"
+// @Router /user/password [put]
 func (h *DatabaseUserHandler) ChangePassword(c *gin.Context) {
 	username, exists := c.Get("username")
 	if !exists {
@@ -109,10 +149,7 @@ func (h *DatabaseUserHandler) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		OldPassword string `json:"old_password" binding:"required"`
-		NewPassword string `json:"new_password" binding:"required,min=6"`
-	}
+	var req models.ChangePasswordRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
@@ -155,6 +192,18 @@ func (h *DatabaseUserHandler) ListUsers(c *gin.Context) {
 }
 
 // UpdateUserStatus updates user active status
+// @Summary Update user status
+// @Description Enable or disable a user account
+// @Tags User Management
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param username path string true "Username"
+// @Param request body models.UpdateUserStatusRequest true "User status"
+// @Success 200 {object} models.APIResponse "User status updated successfully"
+// @Failure 400 {object} models.APIResponse "Invalid request"
+// @Failure 500 {object} models.APIResponse "Failed to update user status"
+// @Router /user/{username}/status [put]
 func (h *DatabaseUserHandler) UpdateUserStatus(c *gin.Context) {
 	username := c.Param("username")
 	if username == "" {
@@ -165,9 +214,7 @@ func (h *DatabaseUserHandler) UpdateUserStatus(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		IsActive bool `json:"is_active"`
-	}
+	var req models.UpdateUserStatusRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.APIResponse{

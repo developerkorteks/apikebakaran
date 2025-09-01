@@ -19,6 +19,14 @@ func NewSystemHandler(systemService *services.SystemService) *SystemHandler {
 }
 
 // GetSystemInfo returns system information
+// @Summary Get system information
+// @Description Get detailed system information including CPU, RAM, disk usage, and network info
+// @Tags System
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} models.APIResponse{data=models.SystemInfo} "System information retrieved successfully"
+// @Failure 500 {object} models.APIResponse "Failed to get system information"
+// @Router /system/info [get]
 func (h *SystemHandler) GetSystemInfo(c *gin.Context) {
 	info, err := h.systemService.GetSystemInfo()
 	if err != nil {
@@ -37,6 +45,14 @@ func (h *SystemHandler) GetSystemInfo(c *gin.Context) {
 }
 
 // GetServiceStatus returns VPN service status
+// @Summary Get VPN service status
+// @Description Get the status of all managed VPN services
+// @Tags System
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} models.APIResponse{data=map[string]string} "Service status retrieved successfully"
+// @Failure 500 {object} models.APIResponse "Failed to get service status"
+// @Router /system/status [get]
 func (h *SystemHandler) GetServiceStatus(c *gin.Context) {
 	status, err := h.systemService.GetServiceStatus()
 	if err != nil {
@@ -55,6 +71,14 @@ func (h *SystemHandler) GetServiceStatus(c *gin.Context) {
 }
 
 // GetBandwidthUsage returns bandwidth usage information
+// @Summary Get bandwidth usage
+// @Description Get daily and monthly bandwidth usage
+// @Tags System
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} models.APIResponse{data=map[string]string} "Bandwidth usage retrieved successfully"
+// @Failure 500 {object} models.APIResponse "Failed to get bandwidth usage"
+// @Router /system/bandwidth [get]
 func (h *SystemHandler) GetBandwidthUsage(c *gin.Context) {
 	info, err := h.systemService.GetSystemInfo()
 	if err != nil {
@@ -78,10 +102,19 @@ func (h *SystemHandler) GetBandwidthUsage(c *gin.Context) {
 }
 
 // AddDomain adds a new domain to the system
+// @Summary Add a new domain
+// @Description Add a new domain to the system for VPN services
+// @Tags Domain
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body models.AddDomainRequest true "Domain name"
+// @Success 200 {object} models.APIResponse "Domain added successfully"
+// @Failure 400 {object} models.APIResponse "Invalid request"
+// @Failure 500 {object} models.APIResponse "Failed to add domain"
+// @Router /domain/add [post]
 func (h *SystemHandler) AddDomain(c *gin.Context) {
-	var req struct {
-		Domain string `json:"domain" binding:"required"`
-	}
+	var req models.AddDomainRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
@@ -109,6 +142,14 @@ func (h *SystemHandler) AddDomain(c *gin.Context) {
 }
 
 // GetCurrentDomain returns the current domain
+// @Summary Get current domain
+// @Description Get the currently configured domain and server IP
+// @Tags Domain
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} models.APIResponse{data=map[string]string} "Current domain retrieved successfully"
+// @Failure 500 {object} models.APIResponse "Failed to get current domain"
+// @Router /domain/current [get]
 func (h *SystemHandler) GetCurrentDomain(c *gin.Context) {
 	info, err := h.systemService.GetSystemInfo()
 	if err != nil {
@@ -130,6 +171,14 @@ func (h *SystemHandler) GetCurrentDomain(c *gin.Context) {
 }
 
 // RenewSSL renews SSL certificate
+// @Summary Renew SSL certificate
+// @Description Renew the SSL certificate for the current domain
+// @Tags Domain
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} models.APIResponse "SSL certificate renewed successfully"
+// @Failure 500 {object} models.APIResponse "Failed to renew SSL certificate"
+// @Router /domain/ssl/renew [post]
 func (h *SystemHandler) RenewSSL(c *gin.Context) {
 	if err := h.systemService.RenewSSL(); err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
@@ -146,6 +195,14 @@ func (h *SystemHandler) RenewSSL(c *gin.Context) {
 }
 
 // Reboot system
+// @Summary Reboot system
+// @Description Reboot the entire system
+// @Tags System
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} models.APIResponse "System reboot initiated"
+// @Failure 500 {object} models.APIResponse "Failed to reboot system"
+// @Router /system/reboot [post]
 func (h *SystemHandler) Reboot(c *gin.Context) {
 	if err := h.systemService.Reboot(); err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
@@ -162,6 +219,14 @@ func (h *SystemHandler) Reboot(c *gin.Context) {
 }
 
 // RestartServices restarts VPN services
+// @Summary Restart VPN services
+// @Description Restart all managed VPN services
+// @Tags System
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} models.APIResponse "VPN services restarted successfully"
+// @Failure 500 {object} models.APIResponse "Failed to restart services"
+// @Router /system/restart [post]
 func (h *SystemHandler) RestartServices(c *gin.Context) {
 	if err := h.systemService.RestartServices(); err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{

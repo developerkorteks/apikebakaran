@@ -1,0 +1,1245 @@
+basePath: /api/v1
+definitions:
+  models.APIResponse:
+    properties:
+      data: {}
+      error:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  models.AddDomainRequest:
+    properties:
+      domain:
+        type: string
+    required:
+    - domain
+    type: object
+  models.ChangePasswordRequest:
+    properties:
+      new_password:
+        minLength: 6
+        type: string
+      old_password:
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  models.CreateUserRequest:
+    properties:
+      days:
+        minimum: 1
+        type: integer
+      email:
+        type: string
+      password:
+        type: string
+      protocol:
+        description: Set by handler, not required in request
+        type: string
+      username:
+        type: string
+    required:
+    - days
+    - username
+    type: object
+  models.ExtendUserRequest:
+    properties:
+      days:
+        minimum: 1
+        type: integer
+    required:
+    - days
+    type: object
+  models.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  models.LoginResponse:
+    properties:
+      expires_at:
+        type: string
+      token:
+        type: string
+      username:
+        type: string
+    type: object
+  models.SystemInfo:
+    properties:
+      cpu_cores:
+        type: integer
+      cpu_name:
+        type: string
+      cpu_usage:
+        type: string
+      daily_bandwidth:
+        type: string
+      domain:
+        type: string
+      ip:
+        type: string
+      kernel:
+        type: string
+      monthly_bandwidth:
+        type: string
+      os:
+        type: string
+      ram_total_mb:
+        type: integer
+      ram_usage_percent:
+        type: string
+      ram_used_mb:
+        type: integer
+      uptime:
+        type: string
+    type: object
+  models.UpdateUserStatusRequest:
+    properties:
+      is_active:
+        type: boolean
+    type: object
+  models.User:
+    properties:
+      created_date:
+        type: string
+      email:
+        type: string
+      expiry_date:
+        type: string
+      is_active:
+        type: boolean
+      password:
+        type: string
+      port:
+        type: integer
+      protocol:
+        description: ssh, vmess, vless, trojan, shadowsocks
+        type: string
+      username:
+        type: string
+      uuid:
+        type: string
+    type: object
+  models.VPNConfig:
+    properties:
+      config:
+        additionalProperties:
+          type: string
+        type: object
+      password:
+        type: string
+      port:
+        type: integer
+      protocol:
+        type: string
+      server:
+        type: string
+      username:
+        type: string
+      uuid:
+        type: string
+    type: object
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API for VPN management system supporting SSH, VMESS, VLESS, Trojan,
+    and Shadowsocks protocols
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: VPN API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate admin user and get JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.LoginResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "401":
+          description: Authentication failed
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Admin login
+      tags:
+      - Authentication
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new admin user account
+      parameters:
+      - description: Registration credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Invalid request or user already exists
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Register new admin user
+      tags:
+      - Authentication
+  /domain/add:
+    post:
+      consumes:
+      - application/json
+      description: Add a new domain to the system for VPN services
+      parameters:
+      - description: Domain name
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.AddDomainRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Domain added successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to add domain
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Add a new domain
+      tags:
+      - Domain
+  /domain/current:
+    get:
+      description: Get the currently configured domain and server IP
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Current domain retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  additionalProperties:
+                    type: string
+                  type: object
+              type: object
+        "500":
+          description: Failed to get current domain
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current domain
+      tags:
+      - Domain
+  /domain/ssl/renew:
+    post:
+      description: Renew the SSL certificate for the current domain
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: SSL certificate renewed successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to renew SSL certificate
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Renew SSL certificate
+      tags:
+      - Domain
+  /system/bandwidth:
+    get:
+      description: Get daily and monthly bandwidth usage
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Bandwidth usage retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  additionalProperties:
+                    type: string
+                  type: object
+              type: object
+        "500":
+          description: Failed to get bandwidth usage
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get bandwidth usage
+      tags:
+      - System
+  /system/info:
+    get:
+      description: Get detailed system information including CPU, RAM, disk usage,
+        and network info
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: System information retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.SystemInfo'
+              type: object
+        "500":
+          description: Failed to get system information
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get system information
+      tags:
+      - System
+  /system/reboot:
+    post:
+      description: Reboot the entire system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: System reboot initiated
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to reboot system
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Reboot system
+      tags:
+      - System
+  /system/restart:
+    post:
+      description: Restart all managed VPN services
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: VPN services restarted successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to restart services
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Restart VPN services
+      tags:
+      - System
+  /system/status:
+    get:
+      description: Get the status of all managed VPN services
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service status retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  additionalProperties:
+                    type: string
+                  type: object
+              type: object
+        "500":
+          description: Failed to get service status
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get VPN service status
+      tags:
+      - System
+  /user/{username}/status:
+    put:
+      consumes:
+      - application/json
+      description: Enable or disable a user account
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: User status
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateUserStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User status updated successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to update user status
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user status
+      tags:
+      - User Management
+  /user/password:
+    put:
+      consumes:
+      - application/json
+      description: Change authenticated user's password
+      parameters:
+      - description: Old and new passwords
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Change user password
+      tags:
+      - User Management
+  /user/profile:
+    get:
+      consumes:
+      - application/json
+      description: Get authenticated user's profile information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - User Management
+  /vpn/shadowsocks/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new Shadowsocks VPN user
+      parameters:
+      - description: Shadowsocks user creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Shadowsocks user created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.VPNConfig'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to create Shadowsocks user
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Shadowsocks user
+      tags:
+      - VPN - Shadowsocks
+  /vpn/shadowsocks/users:
+    get:
+      description: Get a list of all Shadowsocks VPN users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Shadowsocks users retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.User'
+                  type: array
+              type: object
+        "500":
+          description: Failed to get Shadowsocks users
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Shadowsocks users
+      tags:
+      - VPN - Shadowsocks
+  /vpn/shadowsocks/users/{username}:
+    delete:
+      description: Delete a Shadowsocks VPN user
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Shadowsocks user deleted successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Username is required
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to delete Shadowsocks user
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete Shadowsocks user
+      tags:
+      - VPN - Shadowsocks
+  /vpn/shadowsocks/users/{username}/extend:
+    put:
+      consumes:
+      - application/json
+      description: Extend the expiration date of a Shadowsocks VPN user
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Number of days to extend
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ExtendUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Shadowsocks user extended successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to extend Shadowsocks user
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Extend Shadowsocks user
+      tags:
+      - VPN - Shadowsocks
+  /vpn/ssh/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new SSH/WebSocket VPN user
+      parameters:
+      - description: SSH user creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: SSH user created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.VPNConfig'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to create SSH user
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create SSH user
+      tags:
+      - VPN - SSH
+  /vpn/ssh/users:
+    get:
+      description: Get a list of all SSH/WebSocket VPN users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: SSH users retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.User'
+                  type: array
+              type: object
+        "500":
+          description: Failed to get SSH users
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get SSH users
+      tags:
+      - VPN - SSH
+  /vpn/ssh/users/{username}:
+    delete:
+      description: Delete an SSH/WebSocket VPN user
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: SSH user deleted successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Username is required
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to delete SSH user
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete SSH user
+      tags:
+      - VPN - SSH
+  /vpn/ssh/users/{username}/extend:
+    put:
+      consumes:
+      - application/json
+      description: Extend the expiration date of an SSH/WebSocket VPN user
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Number of days to extend
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ExtendUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: SSH user extended successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to extend SSH user
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Extend SSH user
+      tags:
+      - VPN - SSH
+  /vpn/trojan/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new Trojan VPN user
+      parameters:
+      - description: Trojan user creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Trojan user created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.VPNConfig'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to create Trojan user
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Trojan user
+      tags:
+      - VPN - Trojan
+  /vpn/trojan/users:
+    get:
+      description: Get a list of all Trojan VPN users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trojan users retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.User'
+                  type: array
+              type: object
+        "500":
+          description: Failed to get Trojan users
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Trojan users
+      tags:
+      - VPN - Trojan
+  /vpn/trojan/users/{username}:
+    delete:
+      description: Delete a Trojan VPN user
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trojan user deleted successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Username is required
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to delete Trojan user
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete Trojan user
+      tags:
+      - VPN - Trojan
+  /vpn/trojan/users/{username}/extend:
+    put:
+      consumes:
+      - application/json
+      description: Extend the expiration date of a Trojan VPN user
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Number of days to extend
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ExtendUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trojan user extended successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to extend Trojan user
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Extend Trojan user
+      tags:
+      - VPN - Trojan
+  /vpn/users/{username}/traffic:
+    get:
+      description: Get traffic usage for a specific user
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User traffic retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  additionalProperties: true
+                  type: object
+              type: object
+        "400":
+          description: Username is required
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to get user traffic
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user traffic
+      tags:
+      - VPN - General
+  /vpn/users/all:
+    get:
+      description: Get a list of all users for all VPN protocols
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: All users retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  additionalProperties:
+                    items:
+                      $ref: '#/definitions/models.User'
+                    type: array
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get all VPN users
+      tags:
+      - VPN - General
+  /vpn/users/cleanup-expired:
+    post:
+      description: Remove all expired VPN users from the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Expired users cleaned up successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to cleanup expired users
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Cleanup expired users
+      tags:
+      - VPN - General
+  /vpn/vless/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new VLESS VPN user
+      parameters:
+      - description: VLESS user creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: VLESS user created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.VPNConfig'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to create VLESS user
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create VLESS user
+      tags:
+      - VPN - VLESS
+  /vpn/vless/users:
+    get:
+      description: Get a list of all VLESS VPN users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: VLESS users retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.User'
+                  type: array
+              type: object
+        "500":
+          description: Failed to get VLESS users
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get VLESS users
+      tags:
+      - VPN - VLESS
+  /vpn/vless/users/{username}:
+    delete:
+      description: Delete a VLESS VPN user
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: VLESS user deleted successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Username is required
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to delete VLESS user
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete VLESS user
+      tags:
+      - VPN - VLESS
+  /vpn/vless/users/{username}/extend:
+    put:
+      consumes:
+      - application/json
+      description: Extend the expiration date of a VLESS VPN user
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Number of days to extend
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ExtendUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: VLESS user extended successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to extend VLESS user
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Extend VLESS user
+      tags:
+      - VPN - VLESS
+  /vpn/vmess/create:
+    post:
+      consumes:
+      - application/json
+      description: Create a new VMESS VPN user
+      parameters:
+      - description: VMESS user creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: VMESS user created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.VPNConfig'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to create VMESS user
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create VMESS user
+      tags:
+      - VPN - VMESS
+  /vpn/vmess/users:
+    get:
+      description: Get a list of all VMESS VPN users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: VMESS users retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.User'
+                  type: array
+              type: object
+        "500":
+          description: Failed to get VMESS users
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get VMESS users
+      tags:
+      - VPN - VMESS
+  /vpn/vmess/users/{username}:
+    delete:
+      description: Delete a VMESS VPN user
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: VMESS user deleted successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Username is required
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to delete VMESS user
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete VMESS user
+      tags:
+      - VPN - VMESS
+  /vpn/vmess/users/{username}/extend:
+    put:
+      consumes:
+      - application/json
+      description: Extend the expiration date of a VMESS VPN user
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Number of days to extend
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ExtendUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: VMESS user extended successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to extend VMESS user
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Extend VMESS user
+      tags:
+      - VPN - VMESS
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

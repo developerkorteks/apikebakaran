@@ -26,6 +26,27 @@ type CreateUserRequest struct {
 	Protocol string `json:"protocol,omitempty"` // Set by handler, not required in request
 }
 
+// ChangePasswordRequest represents request to change password
+type ChangePasswordRequest struct {
+	OldPassword string `json:"old_password" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required,min=6"`
+}
+
+// UpdateUserStatusRequest represents request to update user status
+type UpdateUserStatusRequest struct {
+	IsActive bool `json:"is_active"`
+}
+
+// ExtendUserRequest represents request to extend user expiration
+type ExtendUserRequest struct {
+	Days int `json:"days" binding:"required,min=1"`
+}
+
+// AddDomainRequest represents request to add a new domain
+type AddDomainRequest struct {
+	Domain string `json:"domain" binding:"required"`
+}
+
 // SystemInfo represents system information
 type SystemInfo struct {
 	OS              string  `json:"os"`

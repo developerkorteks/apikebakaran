@@ -12,7 +12,32 @@ import (
 	"github.com/nabilulilalbab/apivpn/internal/handlers"
 	"github.com/nabilulilalbab/apivpn/internal/middleware"
 	"github.com/nabilulilalbab/apivpn/internal/services"
+
+	// Swagger imports
+	_ "github.com/nabilulilalbab/apivpn/docs"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
+
+// @title VPN API
+// @version 1.0
+// @description API for VPN management system supporting SSH, VMESS, VLESS, Trojan, and Shadowsocks protocols
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host
+// @BasePath /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 
 func main() {
 	// Load configuration
@@ -30,7 +55,7 @@ func main() {
 	// Initialize services
 	systemService := services.NewSystemService()
 	vpnService := services.NewVPNService()
-	
+
 	// Use database user service instead of file-based
 	userService := services.NewDatabaseUserService(
 		cfg.JWTSecret,
@@ -73,6 +98,9 @@ func main() {
 			"version":  "1.0.0",
 		})
 	})
+
+	// Swagger endpoint
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// API routes
 	api := router.Group("/api/v1")
