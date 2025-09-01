@@ -350,30 +350,82 @@ func (v *VPNService) executeCommandWithOutput(command string) (string, error) {
 }
 
 func (v *VPNService) addXrayUser(protocol, username, uuid string, expiry time.Time) error {
-	// Use the existing scripts but make them non-interactive
-	days := int(time.Until(expiry).Hours() / 24)
-	if days <= 0 {
-		days = 1
+	// Implement the exact same logic as the original scripts but non-interactively
+	expiryStr := expiry.Format("2006-01-02")
+	
+	// Check if user already exists
+	checkCmd := fmt.Sprintf("grep -w %s /etc/xray/config.json | wc -l", username)
+	output, err := v.executeCommandWithOutput(checkCmd)
+	if err != nil {
+		return fmt.Errorf("failed to check existing user: %v", err)
 	}
 	
-	var scriptCmd string
+	if strings.TrimSpace(output) != "0" {
+		return fmt.Errorf("user %s already exists", username)
+	}
+	
+	// Generate UUID if not provided
+	if uuid == "" {
+		uuidCmd := "cat /proc/sys/kernel/random/uuid"
+		uuidOutput, err := v.executeCommandWithOutput(uuidCmd)
+		if err != nil {
+			return fmt.Errorf("failed to generate UUID: %v", err)
+		}
+		uuid = strings.TrimSpace(uuidOutput)
+	}
+	
+	var commands []string
 	switch protocol {
 	case "vmess":
-		// Use add-ws script with echo input
-		scriptCmd = fmt.Sprintf(`echo -e "%s\n%d" | /usr/bin/add-ws`, username, days)
+		// Based on add-ws script
+		commands = []string{
+			fmt.Sprintf(`sed -i '/#vmess$/a\#vms %s %s\
+},{"id": "%s","email": "%s"' /etc/xray/config.json`, username, expiryStr, uuid, username),
+			fmt.Sprintf(`sed -i '/#vmessgrpc$/a\#vmsg %s %s\
+},{"id": "%s","email": "%s"' /etc/xray/config.json`, username, expiryStr, uuid, username),
+		}
+		
 	case "vless":
-		scriptCmd = fmt.Sprintf(`echo -e "%s\n%d" | /usr/bin/add-vless`, username, days)
+		// Based on add-vless script
+		commands = []string{
+			fmt.Sprintf(`sed -i '/#vless$/a\#vls %s %s\
+},{"id": "%s","email": "%s"' /etc/xray/config.json`, username, expiryStr, uuid, username),
+			fmt.Sprintf(`sed -i '/#vlessgrpc$/a\#vlsg %s %s\
+},{"id": "%s","email": "%s"' /etc/xray/config.json`, username, expiryStr, uuid, username),
+		}
+		
 	case "trojan":
-		scriptCmd = fmt.Sprintf(`echo -e "%s\n%d" | /usr/bin/add-tr`, username, days)
+		// Based on add-tr script
+		commands = []string{
+			fmt.Sprintf(`sed -i '/#trojanws$/a\#tr %s %s\
+},{"password": "%s","email": "%s"' /etc/xray/config.json`, username, expiryStr, uuid, username),
+			fmt.Sprintf(`sed -i '/#trojangrpc$/a\#trg %s %s\
+},{"password": "%s","email": "%s"' /etc/xray/config.json`, username, expiryStr, uuid, username),
+		}
+		
 	case "shadowsocks":
-		scriptCmd = fmt.Sprintf(`echo -e "%s\n%d" | /usr/bin/add-ssws`, username, days)
+		// Based on add-ssws script
+		commands = []string{
+			fmt.Sprintf(`sed -i '/#shadowsocks$/a\#ss %s %s\
+},{"password": "%s","email": "%s"' /etc/xray/config.json`, username, expiryStr, uuid, username),
+			fmt.Sprintf(`sed -i '/#shadowsocksgrpc$/a\#ssg %s %s\
+},{"password": "%s","email": "%s"' /etc/xray/config.json`, username, expiryStr, uuid, username),
+		}
+		
 	default:
 		return fmt.Errorf("unsupported protocol: %s", protocol)
 	}
 	
-	// Execute the script with piped input
-	if err := v.executeCommand(scriptCmd); err != nil {
-		return fmt.Errorf("failed to create %s user: %v", protocol, err)
+	// Execute sed commands
+	for _, cmd := range commands {
+		if err := v.executeCommand(cmd); err != nil {
+			return fmt.Errorf("failed to add %s user to config: %v", protocol, err)
+		}
+	}
+	
+	// Restart xray service
+	if err := v.executeCommand("systemctl restart xray"); err != nil {
+		return fmt.Errorf("failed to restart xray service: %v", err)
 	}
 	
 	return nil
