@@ -102,10 +102,8 @@ print_status "Domain configuration created with IP: $SERVER_IP"
 
 # Step 5: Build API
 print_header "🔨 Step 5: Building VPN API..."
-cd /root/apivpn || {
-    print_error "Please make sure you're in the correct directory (/root/apivpn)"
-    exit 1
-}
+CURRENT_DIR=$(pwd)
+print_status "Building in current directory: $CURRENT_DIR"
 
 # Download dependencies and build
 export PATH=$PATH:/usr/local/go/bin
@@ -129,8 +127,8 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/apivpn
-ExecStart=/root/apivpn/vpn-api
+WorkingDirectory=$CURRENT_DIR
+ExecStart=$CURRENT_DIR/vpn-api
 Restart=always
 RestartSec=5
 Environment=PORT=37849
