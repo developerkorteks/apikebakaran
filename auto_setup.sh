@@ -102,8 +102,11 @@ print_status "Domain configuration created with IP: $SERVER_IP"
 
 # Step 5: Build API
 print_header "🔨 Step 5: Building VPN API..."
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+cd "$SCRIPT_DIR"
 CURRENT_DIR=$(pwd)
-print_status "Building in current directory: $CURRENT_DIR"
+print_status "Building in script directory: $CURRENT_DIR"
 
 # Download dependencies and build
 export PATH=$PATH:/usr/local/go/bin
