@@ -1,0 +1,7 @@
+# Telegram Bot Dependencies
+python-telegram-bot==20.7
+requests==2.31.0
+
+# Optional: For enhanced functionality
+python-dotenv==1.0.0
+schedule==1.2.0
