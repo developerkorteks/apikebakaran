@@ -8,6 +8,20 @@ set -e
 echo "🚀 Starting VPN API Auto Setup..."
 echo "=================================="
 
+# Step 0: Run dependency check
+print_header "🔍 Step 0: Checking dependencies..."
+if [ -f "./check_dependencies.sh" ]; then
+    chmod +x ./check_dependencies.sh
+    ./check_dependencies.sh
+    if [ $? -ne 0 ]; then
+        print_error "Dependency check failed!"
+        exit 1
+    fi
+    print_status "All dependencies satisfied"
+else
+    print_warning "Dependency checker not found, continuing..."
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -119,8 +133,11 @@ WorkingDirectory=/root/apivpn
 ExecStart=/root/apivpn/vpn-api
 Restart=always
 RestartSec=5
-Environment=PORT=8080
+Environment=PORT=37849
 Environment=JWT_SECRET=$JWT_SECRET
+Environment=API_HOST=0.0.0.0
+Environment=DB_TYPE=sqlite
+Environment=DB_PATH=/etc/apivpn/vpnapi.db
 
 [Install]
 WantedBy=multi-user.target
@@ -148,7 +165,7 @@ fi
 print_header "🔥 Step 8: Configuring firewall..."
 ufw --force enable
 ufw allow 22/tcp
-ufw allow 8080/tcp
+ufw allow 37849/tcp
 ufw allow 80/tcp
 ufw allow 443/tcp
 print_status "Firewall configured"
@@ -161,7 +178,7 @@ server {
     server_name $SERVER_IP _;
 
     location /api/ {
-        proxy_pass http://localhost:8080;
+        proxy_pass http://localhost:37849;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -214,8 +231,8 @@ fi
 print_header "🧪 Step 11: Testing API..."
 
 # Test if API is responding
-if curl -s http://localhost:8080/api/v1/auth/login > /dev/null; then
-    print_status "API is responding on port 8080"
+if curl -s http://localhost:37849/health > /dev/null; then
+    print_status "API is responding on port 37849"
 else
     print_error "API is not responding"
     print_status "Checking service status..."
@@ -229,7 +246,7 @@ cat > /root/test_api.sh << 'EOF'
 
 # Test script for VPN API
 SERVER_IP=$(curl -s ipinfo.io/ip)
-API_URL="http://$SERVER_IP:8080/api/v1"
+API_URL="http://$SERVER_IP:37849/api/v1"
 
 echo "🧪 Testing VPN API..."
 echo "API URL: $API_URL"
@@ -293,8 +310,9 @@ echo "=================================="
 print_status "VPN API has been successfully installed and configured!"
 echo ""
 echo "📋 Summary:"
-echo "   - API URL: http://$SERVER_IP:8080/api/v1"
+echo "   - API URL: http://$SERVER_IP:37849/api/v1"
 echo "   - Nginx URL: http://$SERVER_IP/api/v1"
+echo "   - Health Check: http://$SERVER_IP:37849/health"
 echo "   - Service: systemctl status vpn-api"
 echo "   - Logs: journalctl -u vpn-api -f"
 echo "   - Test: /root/test_api.sh"

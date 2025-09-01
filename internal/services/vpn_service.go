@@ -58,35 +58,55 @@ func (v *VPNService) CreateSSHUser(req *models.CreateUserRequest) (*models.VPNCo
 }
 
 func (v *VPNService) GetSSHUsers() ([]models.User, error) {
-	output, err := v.executeCommandWithOutput("awk -F: '$3 >= 1000 && $1 != \"nobody\" {print $1}' /etc/passwd")
+	// Use the exact same command as menu_script.txt
+	output, err := v.executeCommandWithOutput("awk -F: '$3 >= 1000 && $1 != \"nobody\" {print $1}' /etc/passwd | wc -l")
+	if err != nil {
+		return nil, err
+	}
+
+	count, _ := strconv.Atoi(strings.TrimSpace(output))
+	
+	// Get actual usernames
+	usernamesOutput, err := v.executeCommandWithOutput("awk -F: '$3 >= 1000 && $1 != \"nobody\" {print $1}' /etc/passwd")
 	if err != nil {
 		return nil, err
 	}
 
 	var users []models.User
-	usernames := strings.Split(strings.TrimSpace(output), "\n")
-	
-	for _, username := range usernames {
-		if username == "" {
-			continue
-		}
+	if count > 0 {
+		usernames := strings.Split(strings.TrimSpace(usernamesOutput), "\n")
 		
-		// Get user expiry date
-		expiryCmd := exec.Command("bash", "-c", fmt.Sprintf("chage -l %s | grep 'Account expires' | cut -d: -f2", username))
-		expiryOutput, _ := expiryCmd.Output()
-		expiry := strings.TrimSpace(string(expiryOutput))
-		
-		var expiryDate time.Time
-		if expiry != "never" && expiry != "" {
-			expiryDate, _ = time.Parse("Jan 02, 2006", expiry)
-		}
+		for _, username := range usernames {
+			if username == "" || username == "nobody" {
+				continue
+			}
+			
+			// Get user expiry date using chage
+			expiryCmd := exec.Command("bash", "-c", fmt.Sprintf("chage -l %s 2>/dev/null | grep 'Account expires' | cut -d: -f2", username))
+			expiryOutput, _ := expiryCmd.Output()
+			expiry := strings.TrimSpace(string(expiryOutput))
+			
+			var expiryDate time.Time
+			var isActive bool = true
+			
+			if expiry != "never" && expiry != "" && expiry != "Account expires" {
+				if parsedDate, err := time.Parse("Jan 02, 2006", strings.TrimSpace(expiry)); err == nil {
+					expiryDate = parsedDate
+					isActive = expiryDate.After(time.Now())
+				} else if parsedDate, err := time.Parse("2006-01-02", strings.TrimSpace(expiry)); err == nil {
+					expiryDate = parsedDate
+					isActive = expiryDate.After(time.Now())
+				}
+			}
 
-		users = append(users, models.User{
-			Username:    username,
-			Protocol:    "ssh",
-			ExpiryDate:  expiryDate,
-			IsActive:    expiryDate.After(time.Now()) || expiryDate.IsZero(),
-		})
+			users = append(users, models.User{
+				Username:    username,
+				Protocol:    "ssh",
+				ExpiryDate:  expiryDate,
+				IsActive:    isActive,
+				CreatedDate: time.Now(),
+			})
+		}
 	}
 
 	return users, nil
@@ -364,21 +384,46 @@ func (v *VPNService) addXrayUser(protocol, username, uuid string, expiry time.Ti
 }
 
 func (v *VPNService) getXrayUsers(protocol, prefix string) ([]models.User, error) {
-	output, err := v.executeCommandWithOutput(fmt.Sprintf("grep -c -E '^%s' /etc/xray/config.json", prefix))
+	// Use the exact same pattern as menu_script.txt
+	var grepPattern string
+	switch protocol {
+	case "vmess":
+		grepPattern = "grep -c -E \"^#vmsg \" /etc/xray/config.json"
+	case "vless":
+		grepPattern = "grep -c -E \"^#vlsg \" /etc/xray/config.json"
+	case "trojan":
+		grepPattern = "grep -c -E \"^#trg \" /etc/xray/config.json"
+	case "shadowsocks":
+		grepPattern = "grep -c -E \"^#ssg \" /etc/xray/config.json"
+	default:
+		return []models.User{}, nil
+	}
+
+	output, err := v.executeCommandWithOutput(grepPattern)
 	if err != nil {
 		return []models.User{}, nil
 	}
 
 	count, _ := strconv.Atoi(strings.TrimSpace(output))
 	
-	// This is simplified - you'd need to actually parse the config file
+	// Get actual usernames from config file
 	var users []models.User
-	for i := 0; i < count; i++ {
-		users = append(users, models.User{
-			Username: fmt.Sprintf("user%d", i+1),
-			Protocol: protocol,
-			IsActive: true,
-		})
+	if count > 0 {
+		// Extract usernames from xray config
+		usernamesOutput, err := v.executeCommandWithOutput(fmt.Sprintf("grep -E \"^%s \" /etc/xray/config.json | awk '{print $2}'", prefix))
+		if err == nil {
+			usernames := strings.Split(strings.TrimSpace(usernamesOutput), "\n")
+			for _, username := range usernames {
+				if username != "" {
+					users = append(users, models.User{
+						Username: strings.TrimSpace(username),
+						Protocol: protocol,
+						IsActive: true,
+						ExpiryDate: time.Now().AddDate(0, 1, 0), // Default 1 month
+					})
+				}
+			}
+		}
 	}
 
 	return users, nil

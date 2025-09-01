@@ -55,15 +55,29 @@ func (s *SystemService) GetSystemInfo() (*models.SystemInfo, error) {
 		info.Uptime = strings.TrimSpace(uptime)
 	}
 
-	// Get domain
-	if domain, err := s.executeCommand("cat /etc/xray/domain 2>/dev/null || echo 'Not configured'"); err == nil {
+	// Get domain - exactly like menu_script.txt
+	if domain, err := s.executeCommand("cat /etc/xray/domain 2>/dev/null"); err == nil {
 		info.Domain = strings.TrimSpace(domain)
+	} else {
+		info.Domain = "Not configured"
 	}
 
-	// Get IP
-	if ip, err := s.executeCommand("curl -s ipinfo.io/ip"); err == nil {
-		info.IP = strings.TrimSpace(ip)
+	// Get IP - use multiple methods like menu_script.txt
+	var ip string
+	if ipOutput, err := s.executeCommand("curl -s ipinfo.io/ip"); err == nil {
+		ip = strings.TrimSpace(ipOutput)
 	}
+	if ip == "" {
+		if ipOutput, err := s.executeCommand("curl -sS ipv4.icanhazip.com"); err == nil {
+			ip = strings.TrimSpace(ipOutput)
+		}
+	}
+	if ip == "" {
+		if ipOutput, err := s.executeCommand("curl -sS ifconfig.me"); err == nil {
+			ip = strings.TrimSpace(ipOutput)
+		}
+	}
+	info.IP = ip
 
 	// Get bandwidth usage
 	if daily, err := s.executeCommand("vnstat -d --oneline | awk -F\\; '{print $6}' | sed 's/ //'"); err == nil {
@@ -81,12 +95,13 @@ func (s *SystemService) GetSystemInfo() (*models.SystemInfo, error) {
 func (s *SystemService) GetServiceStatus() (*models.ServiceStatus, error) {
 	status := &models.ServiceStatus{}
 
-	status.SSH = s.isServiceActive("ssh")
-	status.Nginx = s.isServiceActive("nginx")
-	status.Xray = s.isServiceActive("xray")
-	status.Dropbear = s.isServiceActive("dropbear")
-	status.Stunnel = s.isServiceActive("stunnel5")
-	status.SSHWebSocket = s.isServiceActive("ws-stunnel")
+	// Use the same method as menu_script.txt
+	status.SSH = s.isServiceActiveScript("ssh")
+	status.Nginx = s.isServiceActiveScript("nginx")
+	status.Xray = s.isServiceActiveScript("xray")
+	status.Dropbear = s.isServiceActiveScript("dropbear")
+	status.Stunnel = s.isServiceActiveScript("stunnel5")
+	status.SSHWebSocket = s.isServiceActiveScript("ws-stunnel")
 
 	return status, nil
 }
@@ -179,6 +194,30 @@ func (s *SystemService) isServiceActive(service string) bool {
 	return err == nil && strings.TrimSpace(output) == "active"
 }
 
+// isServiceActiveScript uses the same method as menu_script.txt
+func (s *SystemService) isServiceActiveScript(service string) bool {
+	// First check to determine the field position
+	cekOutput, err := s.executeCommand(fmt.Sprintf("service %s status | grep active | cut -d ' ' -f5", service))
+	if err != nil {
+		return false
+	}
+	
+	var stat string
+	if strings.TrimSpace(cekOutput) == "active" {
+		stat = "-f5"
+	} else {
+		stat = "-f7"
+	}
+	
+	// Get the actual status
+	statusOutput, err := s.executeCommand(fmt.Sprintf("service %s status | grep active | cut -d ' ' %s", service, stat))
+	if err != nil {
+		return false
+	}
+	
+	return strings.TrimSpace(statusOutput) == "active"
+}
+
 func (s *SystemService) getCPUName() (string, error) {
 	output, err := s.executeCommand("awk -F: '/model name/ {name=$2} END {print name}' /proc/cpuinfo")
 	return strings.TrimSpace(output), err
@@ -193,11 +232,29 @@ func (s *SystemService) getCPUCores() (int, error) {
 }
 
 func (s *SystemService) getCPUUsage() (string, error) {
-	output, err := s.executeCommand("ps aux | awk 'BEGIN {sum=0} {sum+=$3}; END {print sum}'")
+	// Use the exact same calculation as menu_script.txt
+	cpu_usage1_output, err := s.executeCommand("ps aux | awk 'BEGIN {sum=0} {sum+=$3}; END {print sum}'")
 	if err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(output) + "%", nil
+	
+	cores, err := s.getCPUCores()
+	if err != nil || cores == 0 {
+		cores = 1
+	}
+	
+	cpu_usage1 := strings.TrimSpace(cpu_usage1_output)
+	// Remove decimal part and divide by cores (like menu_script.txt)
+	if dotIndex := strings.Index(cpu_usage1, "."); dotIndex != -1 {
+		cpu_usage1 = cpu_usage1[:dotIndex]
+	}
+	
+	if usage, err := strconv.Atoi(cpu_usage1); err == nil {
+		finalUsage := usage / cores
+		return fmt.Sprintf("%d%%", finalUsage), nil
+	}
+	
+	return "0%", nil
 }
 
 func (s *SystemService) getRAMInfo() (int, int, string, error) {
